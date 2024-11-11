@@ -42,6 +42,7 @@ static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
 
+FILE* file;
 
 /*
   ----------------------------------------------------------------------
@@ -268,6 +269,21 @@ static void idle_func ( void )
 	get_from_UI ( dens_prev, u_prev, v_prev );
 	vel_step ( N, u, v, u_prev, v_prev, visc, dt );
 	dens_step ( N, dens, dens_prev, u, v, diff, dt );
+	
+	// calculation and printing of mass of smoke
+	float dens_sum = 0.0f;
+
+	for (int i = 0; i <= N; i++) 
+	{
+		for (int j = 0; j <= N; j++)
+		{
+			dens_sum += dens[IX(i,j)];
+		}
+	}
+
+	dens_sum /= N * N;
+
+	fprintf(file, "%f\n", dens_sum);
 
 	glutSetWindow ( win_id );
 	glutPostRedisplay ();
@@ -340,10 +356,10 @@ int main ( int argc, char ** argv )
 	if ( argc == 1 ) {
 		N =64;				// jemnost siete - 64 - pre 256 relativne ok, 512 nie
 		dt = 0.1f;			// casovy krok - 0.1 - 
-		diff = 0.0f;		// difuzia - 0.0 - zaujimave je napr 0.001
+		diff = 0.001f;		// difuzia - 0.0 - zaujimave je napr 0.001, musi byt nizka hodnota
 		visc = 0.0f;		// viskozita - 0.0 - 
 		force = 5.0f;		// sila fuknutia - 5.0 - 
-		source = 100.0f;		// intenzita zdroja - 100.0 - 
+		source = 10.0f;		// intenzita zdroja - 100.0 - 
 		fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g\n",
 			N, dt, diff, visc, force, source );
 	} else {
@@ -370,8 +386,19 @@ int main ( int argc, char ** argv )
 	win_x = 512;
 	win_y = 512;
 	open_glut_window ();
+	
+	// open file where we will print calculated mass of smoke, the printing happens in idle_func
+	file = fopen("mass.txt", "w");
+	if (!file) {
+		fprintf(stderr, "Could not open file for writing\n");
+		exit(1);
+	}
+
+	file = fopen("mass.txt", "w");
 
 	glutMainLoop ();
+
+	fclose(file);
 
 	exit ( 0 );
 }
