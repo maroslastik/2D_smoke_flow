@@ -3,6 +3,9 @@
 #define FOR_EACH_CELL for ( i=1 ; i<=N ; i++ ) { for ( j=1 ; j<=N ; j++ ) {
 #define END_FOR }}
 
+float max0(float s_ij);
+float min0(float s_ij);
+
 void add_source ( int N, float * x, float * s, float dt )
 {
 	int i, size=(N+2)*(N+2);
@@ -49,14 +52,41 @@ void advect ( int N, int b, float * d, float * d0, float * u, float * v, float d
 	float x, y, s0, t0, s1, t1, dt0;
 
 	dt0 = dt * N;
-	FOR_EACH_CELL
-		x = i - dt0 * u[IX(i,j)];				y = j - dt0 * v[IX(i,j)];
-		if (x < 0.5f) x = 0.5f;					if (x > N + 0.5f) x = N + 0.5f;			i0 = (int) x;		i1 = i0 + 1;
-		if (y < 0.5f) y = 0.5f;					if (y > N + 0.5f) y = N + 0.5f;			j0 = (int) y;		j1 = j0 + 1;
+	if (b != 11)
+	{
+		FOR_EACH_CELL
+			x = i - dt0 * u[IX(i, j)];				y = j - dt0 * v[IX(i, j)];
+		if (x < 0.5f) x = 0.5f;					if (x > N + 0.5f) x = N + 0.5f;			i0 = (int)x;		i1 = i0 + 1;
+		if (y < 0.5f) y = 0.5f;					if (y > N + 0.5f) y = N + 0.5f;			j0 = (int)y;		j1 = j0 + 1;
 		s1 = x - i0;			s0 = 1 - s1;		t1 = y - j0;		t0 = 1 - t1;
-		d[IX(i,j)] = s0 * (t0 * d0[IX(i0,j0)] + t1 * d0[IX(i0,j1)]) +
-					 s1 * (t0 * d0[IX(i1,j0)] + t1 * d0[IX(i1,j1)]);
-	END_FOR
+		d[IX(i, j)] = s0 * (t0 * d0[IX(i0, j0)] + t1 * d0[IX(i0, j1)]) +
+			s1 * (t0 * d0[IX(i1, j0)] + t1 * d0[IX(i1, j1)]);
+		END_FOR
+	}
+	else
+	{
+		FOR_EACH_CELL
+			float up, um, vp, vm, h = 1.0f / N;
+			
+		up = 0.5f * (u[IX(i, j)] + u[IX(i + 1, j)]);
+		um = 0.5f * (u[IX(i, j)] + u[IX(i - 1, j)]);
+		vp = 0.5f * (v[IX(i, j)] + v[IX(i, j + 1)]);
+		vm = 0.5f * (v[IX(i, j)] + v[IX(i, j - 1)]);
+
+			// gaus - seidel method
+		d[IX(i, j)] = d0[IX(i, j)] - dt / h * (
+			max0(up) * d0[IX(i, j)] +
+			min0(up) * d0[IX(i + 1, j)] -
+			max0(um) * d0[IX(i - 1, j)] -
+			min0(um) * d0[IX(i, j)] +
+
+			max0(vp) * d0[IX(i, j)] +
+			min0(vp) * d0[IX(i, j + 1)] -
+			max0(vm) * d0[IX(i, j - 1)] -
+			min0(vm) * d0[IX(i, j)]
+			);
+		END_FOR
+	}
 	set_bnd ( N, b, d );
 }
 
@@ -83,7 +113,8 @@ void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff,
 {
 	add_source ( N, x, x0, dt );
 	SWAP ( x0, x ); diffuse ( N, 0, x, x0, diff, dt );
-	SWAP ( x0, x ); advect ( N, 0, x, x0, u, v, dt );
+	//SWAP ( x0, x ); advect(N, 0, x, x0, u, v, dt);
+	SWAP ( x0, x ); advect ( N, 11, x, x0, u, v, dt );
 }
 
 void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt )
@@ -97,3 +128,12 @@ void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc,
 	project ( N, u, v, u0, v0 );
 }
 
+float max0(float s_ij) 
+{
+	return (s_ij > 0) ? s_ij : 0.0f;
+}
+
+float min0(float s_ij) 
+{
+	return (s_ij < 0) ? s_ij : 0.0f;
+}
