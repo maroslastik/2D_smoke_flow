@@ -16,25 +16,41 @@ void set_bnd ( int N, int b, float * x )
 {
 	int i;
 
-	for ( i=1 ; i<=N ; i++ ) {
-		x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];
-		x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];
-		x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];
-		x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];
+	// hodnoty na hranici
+	for (i = 1; i <= N; i++) 
+	{
+		// u hrana
+		x[IX(0    , i)] = b == 1 ? -x[IX(1, i)] : x[IX(1, i)];
+		x[IX(N + 1, i)] = b == 1 ? -x[IX(N, i)] : x[IX(N, i)];
+		// v hrana
+		x[IX(i, 0    )] = b == 2 ? -x[IX(i, 1)] : x[IX(i, 1)];
+		x[IX(i, N + 1)] = b == 2 ? -x[IX(i, N)] : x[IX(i, N)];
 	}
-	x[IX(0  ,0  )] = 0.5f*(x[IX(1,0  )]+x[IX(0  ,1)]);
-	x[IX(0  ,N+1)] = 0.5f*(x[IX(1,N+1)]+x[IX(0  ,N)]);
-	x[IX(N+1,0  )] = 0.5f*(x[IX(N,0  )]+x[IX(N+1,1)]);
-	x[IX(N+1,N+1)] = 0.5f*(x[IX(N,N+1)]+x[IX(N+1,N)]);
+
+	// moja uprava - prudi pozdlz u a je periodicke
+	for (i = 1; i <= N; i++)
+	{
+		x[IX(0    , i)] =   b == 1 ? 0.1 - x[IX(1, 1)] : x[IX(1, 1)];
+		x[IX(N + 1, i)] =   b == 1 ? 0.1 - x[IX(N, i)] : x[IX(N, i)];
+
+		x[IX(0, i)] = b == 0 ? x[IX(N, i)] : x[IX(0, i)];
+	}
+
+	// hodonty v rohu
+	x[IX(0    ,0    )] = 0.5f * (x[IX(1, 0    )] + x[IX(0  , 1   )]);
+	x[IX(0    ,N + 1)] = 0.5f * (x[IX(1, N + 1)] + x[IX(0  , N   )]);
+	x[IX(N + 1,0    )] = 0.5f * (x[IX(N, 0    )] + x[IX(N + 1, 1 )]);
+	x[IX(N + 1,N + 1)] = 0.5f * (x[IX(N, N + 1)] + x[IX(N + 1, N )]);
 }
 
-void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
+void lin_solve( int N, int b, float * x, float * x0, float a, float c )
 {
 	int i, j, k;
 
-	for ( k=0 ; k<20 ; k++ ) {
+	for ( k=0 ; k<20 ; k++ ) 
+	{
 		FOR_EACH_CELL
-			x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c;
+			x[IX(i, j)] = (x0[IX(i, j)] + a * (x[IX(i - 1, j)] + x[IX(i + 1, j)] + x[IX(i, j - 1)] + x[IX(i, j + 1)])) / c;
 		END_FOR
 		set_bnd ( N, b, x );
 	}
@@ -68,23 +84,23 @@ void advect ( int N, int b, float * d, float * d0, float * u, float * v, float d
 		FOR_EACH_CELL
 			float up, um, vp, vm, h = 1.0f / N;
 			
-		up = 0.5f * (u[IX(i, j)] + u[IX(i + 1, j)]);
-		um = 0.5f * (u[IX(i, j)] + u[IX(i - 1, j)]);
-		vp = 0.5f * (v[IX(i, j)] + v[IX(i, j + 1)]);
-		vm = 0.5f * (v[IX(i, j)] + v[IX(i, j - 1)]);
+			up = 0.5f * (u[IX(i, j)] + u[IX(i + 1, j)]);
+			um = 0.5f * (u[IX(i, j)] + u[IX(i - 1, j)]);
+			vp = 0.5f * (v[IX(i, j)] + v[IX(i, j + 1)]);
+			vm = 0.5f * (v[IX(i, j)] + v[IX(i, j - 1)]);
 
-			// gaus - seidel method
-		d[IX(i, j)] = d0[IX(i, j)] - dt / h * (
-			max0(up) * d0[IX(i, j)] +
-			min0(up) * d0[IX(i + 1, j)] -
-			max0(um) * d0[IX(i - 1, j)] -
-			min0(um) * d0[IX(i, j)] +
+				// gaus - seidel method
+			d[IX(i, j)] = d0[IX(i, j)] - dt / h * (
+				max0(up) * d0[IX(i, j)] +
+				min0(up) * d0[IX(i + 1, j)] -
+				max0(um) * d0[IX(i - 1, j)] -
+				min0(um) * d0[IX(i, j)] +
 
-			max0(vp) * d0[IX(i, j)] +
-			min0(vp) * d0[IX(i, j + 1)] -
-			max0(vm) * d0[IX(i, j - 1)] -
-			min0(vm) * d0[IX(i, j)]
-			);
+				max0(vp) * d0[IX(i, j)] +
+				min0(vp) * d0[IX(i, j + 1)] -
+				max0(vm) * d0[IX(i, j - 1)] -
+				min0(vm) * d0[IX(i, j)]
+				);
 		END_FOR
 	}
 	set_bnd ( N, b, d );
@@ -113,8 +129,7 @@ void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff,
 {
 	add_source ( N, x, x0, dt );
 	SWAP ( x0, x ); diffuse ( N, 0, x, x0, diff, dt );
-	//SWAP ( x0, x ); advect(N, 0, x, x0, u, v, dt);
-	SWAP ( x0, x ); advect ( N, 11, x, x0, u, v, dt );
+	SWAP ( x0, x ); advect ( N, 0, x, x0, u, v, dt );
 }
 
 void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt )

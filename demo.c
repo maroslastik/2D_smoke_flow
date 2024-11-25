@@ -354,12 +354,12 @@ int main ( int argc, char ** argv )
 	}
 
 	if ( argc == 1 ) {
-		N =64;				// jemnost siete - 64 - pre 256 relativne ok, 512 nie
+		N = 64;				// jemnost siete - 64 - pre 256 relativne ok, 512 nie
 		dt = 0.1f;			// casovy krok - 0.1 - 
 		diff = 0.0f;		// difuzia - 0.0 - zaujimave je napr 0.001, musi byt nizka hodnota
 		visc = 0.0f;		// viskozita - 0.0 - 
-		force = 1.0f;		// sila fuknutia - 5.0 - 
-		source = 100.0f;		// intenzita zdroja - 100.0 - 
+		force = 5.0f;		// sila fuknutia - 5.0 - 
+		source = 10.0f;		// intenzita zdroja - 100.0 - 
 		fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g\n",
 			N, dt, diff, visc, force, source );
 	} else {
